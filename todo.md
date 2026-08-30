@@ -69,3 +69,10 @@
 - [x] Document exact external-hosting environment variables and where to configure them on Vercel/Render
 - [x] Add a concrete external database provisioning and Drizzle migration runbook
 - [x] Add a project-specific audit of the actual package scripts and server entrypoint
+- [x] Create a complete project ZIP including client, server, schema, migrations, tests, deployment notes and configuration
+- [x] Exclude local secrets, runtime caches, generated build output and temporary source-check files from the ZIP
+- [x] Verify ZIP integrity and inspect its file manifest before delivery
+- [ ] Create a public `hotcat12/Flop-Network-Explorer` repository on the main branch
+- [ ] Audit and exclude secrets, `.env` files, runtime artifacts and private user data before public upload
+- [ ] Remove AI/Manus promotional references from repository-facing copy without fabricating authorship or affiliation
+- [ ] Push the clean project source and verify the public repository contents
