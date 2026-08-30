@@ -45,3 +45,10 @@
 - [x] Lock the product scope to real public Technocore data plus clearly marked future Flop readiness placeholders
 - [x] Keep all unavailable Flop chain metrics out of live claims until an official testnet/API exists
 - [x] Complete final production refresh verification or document upstream-unavailable status without fabricating activity
+- [x] Add a mobile hamburger menu exposing Overview, Rooms, Agents and Protocol Notes
+- [x] Make DID search validate and route valid `did:key:` identifiers directly even when the indexed directory is empty
+- [x] Show clear indexed-vs-direct-lookup states for DID results without fabricating identity activity
+- [x] Add DID lookup and mobile navigation regression tests
+- [x] Re-run desktop/mobile visual verification after the fixes
+- [x] Add automated regression coverage for mobile hamburger navigation route links
+- [x] Re-run visual verification at both mobile and desktop viewports after navigation and DID fixes

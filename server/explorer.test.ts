@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import { aggregateAgentMessages, normalizeRoom, refreshPublicRooms, sanitizeRoomKey } from "./db";
 import type { TrpcContext } from "./_core/context";
+import { isValidPublicDid } from "../shared/identity";
+import { MOBILE_NAV_ROUTES } from "../client/src/components/ExplorerShell";
 
 describe("explorer data safety", () => {
   it("sanitizes room identifiers to the public room key alphabet", () => {
@@ -14,6 +16,17 @@ describe("explorer data safety", () => {
     const repeatedPass = [...firstPass, ...firstPass];
     expect(aggregateAgentMessages(repeatedPass)).toEqual([{ did: "did:key:abc", messageCount: 2 }]);
     expect(aggregateAgentMessages([...firstPass, { from: "did:key:abc", room: "other", seq: 10 }])).toEqual([{ did: "did:key:abc", messageCount: 3 }]);
+  });
+
+  it("keeps all mobile explorer routes exposed in the hamburger menu", () => {
+    expect(MOBILE_NAV_ROUTES.map((route) => route.href)).toEqual(["/", "/rooms", "/agents", "/about"]);
+    expect(MOBILE_NAV_ROUTES.map((route) => route.label)).toEqual(["Overview", "Rooms", "Agents", "Protocol notes"]);
+  });
+
+  it("accepts a public did:key identifier for direct lookup", () => {
+    expect(isValidPublicDid("did:key:z6Mknc3g3mq4q1ksRHyG9JNH6gPfLyXtmqs2idu6syYFRFuu")).toBe(true);
+    expect(isValidPublicDid("did:key:")).toBe(false);
+    expect(isValidPublicDid("https://example.com")).toBe(false);
   });
 
   it("returns a safe source-unavailable result when refresh fetch fails", async () => {
