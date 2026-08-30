@@ -61,3 +61,11 @@
 - [x] Freshly cross-check room search and room detail payloads against the live Technocore public endpoints
 - [x] Add deterministic room-query tests for known-room, unknown-room and unavailable response states without depending on upstream availability
 - [x] Document the fresh Technocore 503 verification result and keep live-data claims conditional on source availability
+- [x] Audit the current full-stack build/start scripts and server entrypoint for external hosting
+- [x] Document GitHub-to-Vercel deployment configuration and required environment variables
+- [x] Document database provisioning/migration requirements for external hosting
+- [x] Document scheduled Technocore refresh alternatives outside Manus Heartbeat
+- [x] Document external-hosting compatibility limits and recommend a supported deployment path
+- [x] Document exact external-hosting environment variables and where to configure them on Vercel/Render
+- [x] Add a concrete external database provisioning and Drizzle migration runbook
+- [x] Add a project-specific audit of the actual package scripts and server entrypoint
