@@ -222,9 +222,13 @@ export async function getAgentActivity(did: string) {
   return activity.slice(-40).reverse();
 }
 
-export async function refreshPublicRooms() {
-  const rows = await fetchLiveRooms();
-  await persistRooms(rows);
-  const indexedAgents = await indexAgentsFromRooms(rows);
-  return { count: rows.length, indexedAgents, capturedAt: new Date().toISOString(), sourceUrl: TECHNОCORE_ROOMS };
+export async function refreshPublicRooms(fetcher: () => Promise<RoomRecord[]> = fetchLiveRooms) {
+  try {
+    const rows = await fetcher();
+    await persistRooms(rows);
+    const indexedAgents = await indexAgentsFromRooms(rows);
+    return { count: rows.length, indexedAgents, status: "live" as const, capturedAt: new Date().toISOString(), sourceUrl: TECHNОCORE_ROOMS };
+  } catch (error) {
+    return { count: 0, indexedAgents: 0, status: "source-unavailable" as const, error: error instanceof Error ? error.message : String(error), capturedAt: new Date().toISOString(), sourceUrl: TECHNОCORE_ROOMS };
+  }
 }

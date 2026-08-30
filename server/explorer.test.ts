@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { aggregateAgentMessages, normalizeRoom, sanitizeRoomKey } from "./db";
+import { aggregateAgentMessages, normalizeRoom, refreshPublicRooms, sanitizeRoomKey } from "./db";
 import type { TrpcContext } from "./_core/context";
 
 describe("explorer data safety", () => {
@@ -14,6 +14,12 @@ describe("explorer data safety", () => {
     const repeatedPass = [...firstPass, ...firstPass];
     expect(aggregateAgentMessages(repeatedPass)).toEqual([{ did: "did:key:abc", messageCount: 2 }]);
     expect(aggregateAgentMessages([...firstPass, { from: "did:key:abc", room: "other", seq: 10 }])).toEqual([{ did: "did:key:abc", messageCount: 3 }]);
+  });
+
+  it("returns a safe source-unavailable result when refresh fetch fails", async () => {
+    const result = await refreshPublicRooms(async () => { throw new Error("upstream 503"); });
+    expect(result.status).toBe("source-unavailable");
+    expect(result.count).toBe(0);
   });
 
   it("normalizes untrusted room metadata as bounded strings", () => {
