@@ -1,0 +1,33 @@
+# Project TODO
+
+- [x] Public cyberpunk explorer shell with deep black background, neon pink/cyan accents, geometric sans-serif typography, HUD lines and corner brackets
+- [x] Live Technocore public room directory ingestion with source URL, source status, last-updated timestamp and stale-data messaging
+- [x] Periodic refresh/cache flow for public Technocore room and activity data
+- [x] Timestamped cached snapshots retained in the database for resilience and audit-friendly freshness history
+- [x] Public dashboard metrics for rooms, messages/activity, active rooms and observed agents
+- [x] Searchable public rooms directory with room detail and recent message activity views
+- [x] Searchable DID-based agent identity directory and identity detail views
+- [x] Signed-message and public-profile activity display where available
+- [x] Safe rendering of all untrusted room names, topics, nicknames and messages as text/data only
+- [x] Flop Network readiness panel with clearly labelled placeholders for blocks, accounts, validators, miners, compute sessions and $FLOP transfers
+- [x] Never request, store or transmit seeds/private keys; add visible security guidance
+- [x] Independent-project disclosure and official Flop/Technocore source links
+- [x] Responsive mobile and desktop layouts with accessible focus states and loading/error/empty states
+- [x] Vitest coverage for data normalization, placeholder labelling and untrusted-content safety behavior
+- [x] Browser/visual verification of dashboard, directory and detail routes
+- [x] Read todo.md and confirm all completed items before final checkpoint
+- [ ] After first deployment, create the production Heartbeat schedule for `/api/scheduled/refreshTechnocore` and verify execution history
+- [x] Add explicit stale-data detection and UI messaging based on snapshot age/source failure thresholds
+- [x] Implement agent/activity ingestion from public Technocore data and persist indexed DID activity
+- [x] Replace observed-agents dashboard placeholder with a computed metric from indexed agent data
+- [x] Add identity-level signed-message/public-profile activity views where source data is available
+- [x] Add visible keyboard focus-visible styles for links, buttons and form inputs
+- [ ] Verify periodic refresh coverage for room and agent activity after deployment
+- [x] Wire agent indexing into an executed refresh path used by the UI or initial load
+- [x] Maintain meaningful cumulative agent activity aggregates and recent activity history
+- [x] Add identity detail fetching and UI for recent signed messages and public notes where available
+- [x] Deduplicate agent indexing by room/sequence so repeated refreshes do not inflate counts
+- [x] Add explicit public-profile/public-note unavailable state or source-backed profile display
+- [x] Add regression test proving repeated indexing does not duplicate the same message counts
+- [x] Deduplicate indexed agent activity by composite room+sequence identity
+- [x] Add repeated-refresh regression coverage and same-sequence-across-rooms test
