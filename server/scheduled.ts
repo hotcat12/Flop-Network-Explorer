@@ -12,10 +12,10 @@ export async function refreshTechnocoreHandler(req: Request, res: Response) {
     const result = await refreshPublicRooms();
     return res.json({ ok: true, ...result, timestamp });
   } catch (error) {
-    return res.status(500).json({
-      error: error instanceof Error ? error.message : String(error),
-      timestamp,
-      path: req.path,
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.startsWith("Technocore returned")) {
+      return res.status(200).json({ ok: true, status: "source-unavailable", retainedCache: true, error: message, timestamp });
+    }
+    return res.status(500).json({ error: message, timestamp, path: req.path });
   }
 }
