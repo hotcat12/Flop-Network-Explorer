@@ -36,3 +36,8 @@
 - [x] Preserve a concise truthful non-affiliation disclosure in protocol notes and/or footer without presenting the site as Flop Labs official
 - [x] Update page title/favicon/branding metadata to the new explorer identity
 - [x] Re-run tests and visual verification after branding changes
+- [ ] Verify current official Flop testnet, RPC, SDK, token and explorer API availability
+- [ ] Create and verify the production Heartbeat schedule for Technocore cache refresh now that the site is deployed
+- [ ] Replace Flop readiness placeholders only where official live endpoints and verified schemas exist
+- [ ] Bound scheduled agent indexing workload so production refresh completes within Heartbeat timeout
+- [ ] Re-run production Heartbeat after timeout fix and confirm success status

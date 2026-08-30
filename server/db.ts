@@ -198,11 +198,10 @@ export function aggregateAgentMessages(messages: Array<{ from?: string; seq?: nu
 export async function indexAgentsFromRooms(rows: RoomRecord[]) {
   const db = await getDb();
   if (!db) return 0;
+  const activeRooms = rows.filter((item) => item.idle < 600).slice(0, 3);
+  const details = await Promise.all(activeRooms.map((room) => getRoomMessages(room.room)));
   const observed: Array<{ from?: string; seq?: number; room: string; ts?: number | string }> = [];
-  for (const room of rows.filter((item) => item.idle < 600).slice(0, 12)) {
-    const detail = await getRoomMessages(room.room);
-    observed.push(...detail.messages.map((message) => ({ ...message, room: room.room })));
-  }
+  details.forEach((detail, index) => observed.push(...detail.messages.map((message) => ({ ...message, room: activeRooms[index]!.room }))));
   const aggregate = aggregateAgentMessages(observed);
   for (const item of aggregate) {
     const last = observed.filter((message) => message.from === item.did).sort((a, b) => Number(b.seq ?? 0) - Number(a.seq ?? 0))[0];
