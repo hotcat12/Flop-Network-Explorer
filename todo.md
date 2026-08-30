@@ -16,13 +16,13 @@
 - [x] Vitest coverage for data normalization, placeholder labelling and untrusted-content safety behavior
 - [x] Browser/visual verification of dashboard, directory and detail routes
 - [x] Read todo.md and confirm all completed items before final checkpoint
-- [ ] After first deployment, create the production Heartbeat schedule for `/api/scheduled/refreshTechnocore` and verify execution history
+- [x] After first deployment, create the production Heartbeat schedule for `/api/scheduled/refreshTechnocore` and verify execution history
 - [x] Add explicit stale-data detection and UI messaging based on snapshot age/source failure thresholds
 - [x] Implement agent/activity ingestion from public Technocore data and persist indexed DID activity
 - [x] Replace observed-agents dashboard placeholder with a computed metric from indexed agent data
 - [x] Add identity-level signed-message/public-profile activity views where source data is available
 - [x] Add visible keyboard focus-visible styles for links, buttons and form inputs
-- [ ] Verify periodic refresh coverage for room and agent activity after deployment
+- [x] Verify periodic refresh coverage for room and agent activity after deployment
 - [x] Wire agent indexing into an executed refresh path used by the UI or initial load
 - [x] Maintain meaningful cumulative agent activity aggregates and recent activity history
 - [x] Add identity detail fetching and UI for recent signed messages and public notes where available
@@ -37,8 +37,11 @@
 - [x] Update page title/favicon/branding metadata to the new explorer identity
 - [x] Re-run tests and visual verification after branding changes
 - [x] Verify current official Flop testnet, RPC, SDK, token and explorer API availability
-- [ ] Create and verify the production Heartbeat schedule for Technocore cache refresh now that the site is deployed
+- [x] Create and verify the production Heartbeat schedule for Technocore cache refresh now that the site is deployed
 - [x] Replace Flop readiness placeholders only where official live endpoints and verified schemas exist
 - [x] Bound scheduled agent indexing workload so production refresh completes within Heartbeat timeout
-- [ ] Re-run production Heartbeat after timeout fix and confirm success status
+- [x] Re-run production Heartbeat after timeout fix and confirm success status
 - [x] Make scheduled refresh return a safe 2xx source-unavailable result on upstream 5xx while preserving last-known-good cache
+- [x] Lock the product scope to real public Technocore data plus clearly marked future Flop readiness placeholders
+- [x] Keep all unavailable Flop chain metrics out of live claims until an official testnet/API exists
+- [x] Complete final production refresh verification or document upstream-unavailable status without fabricating activity
