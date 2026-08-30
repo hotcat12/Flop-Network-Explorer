@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
-import { aggregateAgentMessages, normalizeRoom, refreshPublicRooms, sanitizeRoomKey } from "./db";
+import { aggregateAgentMessages, getRoomMessages, normalizeRoom, refreshPublicRooms, sanitizeRoomKey } from "./db";
 import type { TrpcContext } from "./_core/context";
 import { isValidPublicDid } from "../shared/identity";
+import { normalizeRoomRoute } from "../shared/routes";
 import { MOBILE_NAV_ROUTES } from "../client/src/components/ExplorerShell";
 
 describe("explorer data safety", () => {
@@ -16,6 +17,33 @@ describe("explorer data safety", () => {
     const repeatedPass = [...firstPass, ...firstPass];
     expect(aggregateAgentMessages(repeatedPass)).toEqual([{ did: "did:key:abc", messageCount: 2 }]);
     expect(aggregateAgentMessages([...firstPass, { from: "did:key:abc", room: "other", seq: 10 }])).toEqual([{ did: "did:key:abc", messageCount: 3 }]);
+  });
+
+  it("parses a known room live payload into safe message data", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ messages: [{ seq: 7, from: "did:key:abc", text: "hello", signed: true }] }), { status: 200, headers: { "content-type": "application/json" } })));
+    const result = await getRoomMessages("lobby");
+    expect(result).toMatchObject({ room: "lobby", source: "live" });
+    expect(result.messages[0]).toMatchObject({ seq: 7, from: "did:key:abc", text: "hello", signed: true });
+    vi.unstubAllGlobals();
+  });
+
+  it("returns an unavailable state for an unknown room response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Not found", { status: 404 })));
+    const result = await getRoomMessages("does-not-exist");
+    expect(result).toMatchObject({ room: "does-not-exist", source: "unavailable", messages: [] });
+    vi.unstubAllGlobals();
+  });
+
+  it("rejects empty room identifiers at the public procedure boundary", async () => {
+    const ctx = { user: undefined, req: {} as any, res: {} as any } as TrpcContext;
+    await expect(appRouter.createCaller(ctx).explorer.room({ room: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("normalizes room route input before query execution", () => {
+    expect(normalizeRoomRoute(undefined)).toBe("");
+    expect(normalizeRoomRoute("lobby")).toBe("lobby");
+    expect(normalizeRoomRoute("public%20room")).toBe("public room");
+    expect(normalizeRoomRoute("%E0%A4")).toBe("");
   });
 
   it("keeps all mobile explorer routes exposed in the hamburger menu", () => {

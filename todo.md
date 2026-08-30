@@ -52,3 +52,12 @@
 - [x] Re-run desktop/mobile visual verification after the fixes
 - [x] Add automated regression coverage for mobile hamburger navigation route links
 - [x] Re-run visual verification at both mobile and desktop viewports after navigation and DID fixes
+- [x] Prevent empty room identifiers from reaching room detail procedures
+- [x] Add room search/detail regression coverage for empty, valid and unknown room inputs
+- [x] Show a user-facing unavailable/error state instead of a console error when room data is missing
+- [x] Verify live room search results and activity payloads against the current Technocore public source
+- [x] Keep live Technocore data separate from clearly labelled Flop chain placeholders
+- [x] Add regression tests for missing-room, valid-room and unknown-room query behavior
+- [x] Freshly cross-check room search and room detail payloads against the live Technocore public endpoints
+- [x] Add deterministic room-query tests for known-room, unknown-room and unavailable response states without depending on upstream availability
+- [x] Document the fresh Technocore 503 verification result and keep live-data claims conditional on source availability
