@@ -31,3 +31,8 @@
 - [x] Add regression test proving repeated indexing does not duplicate the same message counts
 - [x] Deduplicate indexed agent activity by composite room+sequence identity
 - [x] Add repeated-refresh regression coverage and same-sequence-across-rooms test
+- [x] Replace current explorer mark with the user-provided blue logo asset
+- [x] Remove AI-generation references and the visible “Unofficial Explorer” subtitle from public-facing navigation/hero copy
+- [x] Preserve a concise truthful non-affiliation disclosure in protocol notes and/or footer without presenting the site as Flop Labs official
+- [x] Update page title/favicon/branding metadata to the new explorer identity
+- [x] Re-run tests and visual verification after branding changes
