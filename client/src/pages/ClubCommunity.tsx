@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ArrowUpRight, CheckCircle2, ExternalLink, RefreshCw, Send, ShieldAlert } from "lucide-react";
 import ExplorerShell from "@/components/ExplorerShell";
-import { getActiveIdentity, signIdentity } from "@/lib/did";
+import { getActiveIdentity, nextNonce, signIdentity } from "@/lib/did";
 
 const ROOM = "club-community";
 const DID = "did:key:z6Mknc3g3mq4q1ksRHyG9JNH6gPfLyXtmqs2idu6syYFRFuu";
@@ -42,10 +42,10 @@ export default function ClubCommunity() {
     setSending(true);
     try {
       const identity = getActiveIdentity();
-      const nonce = String(Date.now());
-      const signedPath = identity ? `/api/technocore/r/${ROOM}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(await signIdentity(identity, `${ROOM}|${nonce}|${clean}`))}/${nonce}/${encodeURIComponent(clean)}` : `/api/technocore/r/${ROOM}/say/${encodeURIComponent(cleanNick)}/${encodeURIComponent(clean)}`;
+      const nonce = identity ? nextNonce(identity.did, ROOM) : String(Date.now());
+      const signedPath = identity ? `/api/technocore/r/${ROOM}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(await signIdentity(identity, `${identity.did}|${nonce}|${clean}`))}/${nonce}/${encodeURIComponent(clean)}` : `/api/technocore/r/${ROOM}/say/${encodeURIComponent(cleanNick)}/${encodeURIComponent(clean)}`;
       const response = await fetch(signedPath, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Message rejected (HTTP ${response.status})`);
+      if (!response.ok) throw new Error((await response.text()).slice(0, 240) || `Message rejected (HTTP ${response.status})`);
       setText("");
       setError(identity ? "Signed message sent with your active Digital ID." : "Public message sent. Unlock Digital ID to sign as yourself.");
       await load();

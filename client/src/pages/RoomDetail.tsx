@@ -4,7 +4,7 @@ import { Link, useRoute } from "wouter";
 import ExplorerShell from "@/components/ExplorerShell";
 import { trpc } from "@/lib/trpc";
 import { normalizeRoomRoute } from "@shared/routes";
-import { getActiveIdentity, signIdentity } from "@/lib/did";
+import { getActiveIdentity, nextNonce, signIdentity } from "@/lib/did";
 
 export default function RoomDetail() {
   const [, params] = useRoute("/rooms/:room");
@@ -26,9 +26,9 @@ export default function RoomDetail() {
     setSendStatus("");
     try {
       const identity = getActiveIdentity();
-      const nonce = String(Date.now());
+      const nonce = identity ? nextNonce(identity.did, room) : String(Date.now());
       const path = identity
-        ? `/api/technocore/r/${encodeURIComponent(room)}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(await signIdentity(identity, `${room}|${nonce}|${clean}`))}/${nonce}/${encodeURIComponent(clean)}`
+        ? `/api/technocore/r/${encodeURIComponent(room)}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(await signIdentity(identity, `${identity.did}|${nonce}|${clean}`))}/${nonce}/${encodeURIComponent(clean)}`
         : `/api/technocore/r/${encodeURIComponent(room)}/say/${encodeURIComponent(cleanNick)}/${encodeURIComponent(clean)}`;
       const response = await fetch(path, { cache: "no-store" });
       const body = await response.text();

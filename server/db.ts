@@ -176,7 +176,7 @@ export async function getRoomMessages(room: string): Promise<{ room: string; mes
     const raw = await readJson(url);
     const messages = Array.isArray(raw) ? raw : raw.messages ?? raw.data ?? [];
     return { room: safeRoom, messages: messages.map((message: any) => ({
-      seq: Number(message.seq), ts: message.ts, from: String(message.from ?? "anonymous"), text: String(message.text ?? ""), signed: Boolean(message.did || message.signed),
+      seq: Number(message.seq), ts: message.ts, from: String(message.from ?? "anonymous"), text: String(message.text ?? ""), signed: Boolean(message.sig || message.did || message.signed || String(message.from ?? "").startsWith("did:key:")),
     })), source: "live", checkedAt: new Date().toISOString() };
   } catch {
     return { room: safeRoom, messages: [], source: "unavailable", checkedAt: new Date().toISOString() };
