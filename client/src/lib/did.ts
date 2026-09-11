@@ -1,4 +1,5 @@
 const STORAGE_KEY = "flop.did.v1";
+const SESSION_DID_KEY = "flop.did.session.v1";
 let activeIdentity: DidIdentity | null = null;
 const ED25519_PKCS8_PREFIX = new Uint8Array([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20]);
 
@@ -24,4 +25,6 @@ export async function loadIdentity(password: string): Promise<DidIdentity> { con
 export function clearIdentity() { localStorage.removeItem(STORAGE_KEY); }
 export function hasSavedIdentity() { return Boolean(localStorage.getItem(STORAGE_KEY)); }
 export function isValidDid(value: string) { return /^did:key:z[1-9A-HJ-NP-Za-km-z]+$/.test(value); }
+export function setSessionDid(did: string | null) { if (did) sessionStorage.setItem(SESSION_DID_KEY, did); else sessionStorage.removeItem(SESSION_DID_KEY); }
+export function getSessionDid() { return sessionStorage.getItem(SESSION_DID_KEY) ?? ""; }
 export const DID_STORAGE_KEY = STORAGE_KEY;
