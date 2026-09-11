@@ -12,6 +12,10 @@
     {
       "source": "/api/technocore/:path*",
       "destination": "https://technocore.chat/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
