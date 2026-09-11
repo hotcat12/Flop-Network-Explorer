@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Link2, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import ExplorerShell from "@/components/ExplorerShell";
-import { clearIdentity, didFromPublicKeyFile, generateIdentity, getActiveIdentity, getSessionDid, hasSavedIdentity, isValidDid, loadIdentity, parseImportedJwk, parseImportedPem, parseSeed, saveIdentity, setActiveIdentity, setSessionDid, type DidIdentity } from "@/lib/did";
+import { clearIdentity, didFromPublicKeyFile, generateIdentity, getActiveIdentity, getSessionDid, hasSavedIdentity, isValidDid, loadIdentity, parseImportedJwk, parseSeed, saveIdentity, setActiveIdentity, setSessionDid, type DidIdentity } from "@/lib/did";
 
 type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
 const ethereum = () => (window as Window & { ethereum?: EthereumProvider }).ethereum;
@@ -10,8 +10,6 @@ export default function Identity() {
   const [identity, setIdentity] = useState<DidIdentity | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [pendingPem, setPendingPem] = useState("");
-  const [pendingFileName, setPendingFileName] = useState("");
   const [seedText, setSeedText] = useState("");
   const [importText, setImportText] = useState("");
   const [didInput, setDidInput] = useState("");
@@ -27,39 +25,19 @@ export default function Identity() {
     setStatus(sessionDid ? `Signed in as ${sessionDid}.` : hasSavedIdentity() ? "An encrypted Digital ID is saved in this browser." : "No identity in this browser yet. Bring in your backup file to sign in.");
   }, []);
 
-  async function chooseBackup(file: File | undefined) {
-    if (!file) return;
-    setBusy(true);
-    try {
-      setPendingPem(await file.text());
-      setPendingFileName(file.name);
-      setStatus(`${file.name} selected. Enter a local password twice, then choose Encrypt locally and sign in.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not read the backup file");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signInFromBackup() {
-    if (!pendingPem && !seedText.trim()) { setStatus("Paste your 64-character seed or choose an identity backup file first."); return; }
+  async function signInFromSeed() {
+    if (!seedText.trim()) { setStatus("Paste your 64-character seed first."); return; }
     if (password.length < 8) { setStatus("Use a local password of at least 8 characters."); return; }
     if (password !== confirmPassword) { setStatus("The two local passwords do not match."); return; }
     setBusy(true);
     try {
-      const next = seedText.trim() ? await parseSeed(seedText) : await parseImportedPem(pendingPem);
-      if (didInput.trim() && (!isValidDid(didInput.trim()) || didInput.trim() !== next.did)) throw new Error("The pasted DID does not match the DID derived from this backup file.");
+      const next = await parseSeed(seedText);
+      if (didInput.trim() && (!isValidDid(didInput.trim()) || didInput.trim() !== next.did)) throw new Error("The pasted DID does not match the DID derived from this seed.");
       await saveIdentity(next, password);
-      setActiveIdentity(next);
-      setSessionDid(next.did);
-      setIdentity(next);
-      setDidInput(next.did);
-      setStatus(`Signed in as ${next.did}. The encrypted identity stays in this browser; the private key was not uploaded.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Backup sign-in failed");
-    } finally {
-      setBusy(false);
-    }
+      setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did);
+      setStatus(`Signed in as ${next.did}. The seed stays in this browser; signed messages are enabled across all rooms.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Seed sign-in failed"); }
+    finally { setBusy(false); }
   }
 
   async function unlock() {
@@ -110,17 +88,14 @@ export default function Identity() {
 
   return <ExplorerShell eyebrow="IDENTITY VAULT">
     <div className="mx-auto max-w-3xl">
-      <div className="mb-8 text-center"><div className="font-mono text-[10px] uppercase tracking-[.25em] text-fuchsia-300">Private by design</div><h1 className="mt-3 text-4xl font-bold tracking-[-.05em] text-white sm:text-6xl">Sign in to post</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-400">Bring your existing identity backup. It is decrypted and used only in this browser tab; Technocore receives signatures, never your private key.</p></div>
+      <div className="mb-8 text-center"><div className="font-mono text-[10px] uppercase tracking-[.25em] text-fuchsia-300">Private by design</div><h1 className="mt-3 text-4xl font-bold tracking-[-.05em] text-white sm:text-6xl">Sign in to post</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-400">Paste your 64-character seed. It is processed and encrypted only in this browser; Technocore receives signatures, never your seed.</p></div>
       <section className="hud-card overflow-hidden border-cyan-300/25 shadow-[0_0_45px_rgba(34,211,238,.08)]">
         <div className="border-b border-white/10 bg-cyan-300/5 px-6 py-5"><div className="flex items-center gap-3"><KeyRound className="h-5 w-5 text-cyan-300" /><div><h2 className="text-xl font-bold text-white">Unified identity sign-in</h2><p className="mt-1 text-xs text-zinc-500">No Shift key or keyboard shortcut is required.</p></div></div></div>
         <div className="space-y-5 p-6">
           <label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Manual 64-character seed<textarea value={seedText} onChange={(event) => setSeedText(event.target.value)} rows={3} placeholder="Paste 64 hexadecimal characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 font-mono text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label>
-          <div className="text-center font-mono text-[10px] uppercase tracking-widest text-zinc-600">or use a backup file</div>
-          <label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Backup identity file<input type="file" accept=".pem,.txt,.json,application/x-pem-file" onChange={(event) => void chooseBackup(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-cyan-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-cyan-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>
-          <div className="flex items-center gap-3 border border-white/10 bg-white/[.03] p-3 text-xs text-zinc-400"><Upload className="h-4 w-4 shrink-0 text-cyan-300" /><span>{pendingFileName ? `${pendingFileName} ready to import` : "Choose identity.pem or the backup identity file you downloaded."}</span></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Local password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Confirm password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Type it again" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label></div>
-          <button onClick={() => void signInFromBackup()} disabled={busy || (!pendingPem && !seedText.trim())} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-300 px-4 py-4 text-xs font-bold uppercase tracking-wider text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Checking identity…" : "Encrypt locally and sign in"}</button>
-          <p className="text-center text-[11px] leading-5 text-zinc-500">Your password encrypts the identity in localStorage. The backup file and private key are not uploaded.</p>
+          <button onClick={() => void signInFromSeed()} disabled={busy || !seedText.trim()} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-300 px-4 py-4 text-xs font-bold uppercase tracking-wider text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Checking seed…" : "Encrypt locally and sign in"}</button>
+          <p className="text-center text-[11px] leading-5 text-zinc-500">Your password encrypts the identity in localStorage. The seed is never uploaded.</p>
           {hasSavedIdentity() && <button onClick={() => void unlock()} disabled={busy || password.length < 8} className="w-full border border-cyan-300/25 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200 disabled:opacity-40">Unlock saved identity</button>}
           {status && <div className="border border-white/10 bg-white/[.03] p-4 text-xs leading-5 text-zinc-300">{status}</div>}
         </div>
