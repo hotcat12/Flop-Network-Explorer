@@ -10,6 +10,7 @@ import Agents from "./pages/Agents";
 import AgentDetail from "./pages/AgentDetail";
 import About from "./pages/About";
 import ClubCommunity from "./pages/ClubCommunity";
+import Identity from "./pages/Identity";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/agents/:did" component={AgentDetail} />
       <Route path="/about" component={About} />
       <Route path="/club-community" component={ClubCommunity} />
+      <Route path="/identity" component={Identity} />
       <Route component={Home} />
     </Switch>
   );

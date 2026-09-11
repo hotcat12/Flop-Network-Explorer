@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 export const MOBILE_NAV_ROUTES = [
   { href: "/", label: "Overview", icon: Activity },
   { href: "/club-community", label: "Club Community", icon: Radio },
+  { href: "/identity", label: "Digital ID", icon: ShieldCheck },
   { href: "/rooms", label: "Rooms", icon: Boxes },
   { href: "/agents", label: "Agents", icon: Radio },
   { href: "/about", label: "Protocol notes", icon: BookOpen },
@@ -26,6 +27,7 @@ export default function ExplorerShell({ children, eyebrow = "PUBLIC OBSERVATORY"
           <nav className="hidden items-center gap-1 md:flex">
             <NavLink href="/" icon={<Activity className="h-4 w-4" />}>Overview</NavLink>
             <NavLink href="/club-community" icon={<Radio className="h-4 w-4" />}>Club Community</NavLink>
+            <NavLink href="/identity" icon={<ShieldCheck className="h-4 w-4" />}>Digital ID</NavLink>
             <NavLink href="/rooms" icon={<Boxes className="h-4 w-4" />}>Rooms</NavLink>
             <NavLink href="/agents" icon={<Radio className="h-4 w-4" />}>Agents</NavLink>
             <NavLink href="/about" icon={<BookOpen className="h-4 w-4" />}>Protocol notes</NavLink>

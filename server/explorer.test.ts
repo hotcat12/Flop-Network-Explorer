@@ -47,8 +47,8 @@ describe("explorer data safety", () => {
   });
 
   it("keeps all mobile explorer routes exposed in the hamburger menu", () => {
-    expect(MOBILE_NAV_ROUTES.map((route) => route.href)).toEqual(["/", "/club-community", "/rooms", "/agents", "/about"]);
-    expect(MOBILE_NAV_ROUTES.map((route) => route.label)).toEqual(["Overview", "Club Community", "Rooms", "Agents", "Protocol notes"]);
+    expect(MOBILE_NAV_ROUTES.map((route) => route.href)).toEqual(["/", "/club-community", "/identity", "/rooms", "/agents", "/about"]);
+    expect(MOBILE_NAV_ROUTES.map((route) => route.label)).toEqual(["Overview", "Club Community", "Digital ID", "Rooms", "Agents", "Protocol notes"]);
   });
 
   it("accepts a public did:key identifier for direct lookup", () => {
