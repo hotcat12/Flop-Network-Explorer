@@ -57,7 +57,7 @@ export async function sendTechnocoreMessage(room: string, nick: string, text: st
     signatureLength: signature ? signature.length : undefined, signaturePrefix: signature ? `${signature.slice(0, 10)}…${signature.slice(-6)}` : undefined,
     requestPath: requestPath.replace(/\/say-signed\/([^/]+)\/([^/]+)\//, "/say-signed/$1/[signature-redacted]/"), elapsedMs, status: response.status, ok: response.ok,
     responseContentType: response.headers.get("content-type") ?? "", responseBody: safeBody(body), responseHeaders: headers,
-    note: response.ok ? (mode === "signed" ? "Technocore accepted the signed write; verify the room JSON for from/sig/nonce." : "Technocore accepted an unsigned public write.") : "Technocore rejected the write; inspect status and response body.",
+    note: response.ok ? (mode === "signed" ? "Technocore accepted the signed write; verify the room JSON for from/sig/nonce." : "Technocore accepted an unsigned public write.") : (response.status === 403 && body.includes("mailbox") ? "This mb- room accepts signed writes only. Unlock the matching Ed25519 private key and retry; a pasted public DID cannot sign." : "Technocore rejected the write; inspect status and response body."),
   };
   if (!response.ok) throw Object.assign(new Error(diagnostic.responseBody || `Message rejected (HTTP ${response.status})`), { diagnostic });
   return diagnostic;
