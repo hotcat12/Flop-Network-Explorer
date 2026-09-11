@@ -41,7 +41,7 @@ export async function sendTechnocoreMessage(room: string, nick: string, text: st
     mode = "signed";
     did = identity.did;
     nonce = nextNonce(identity.did, room);
-    canonicalPayload = `${identity.did}|${nonce}|${clean}`;
+    canonicalPayload = `${room}|${nonce}|${clean}`;
     signature = await signIdentity(identity, canonicalPayload);
     requestPath = `/api/technocore/r/${encodeURIComponent(room)}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(signature)}/${nonce}/${encodeURIComponent(clean)}`;
   }
