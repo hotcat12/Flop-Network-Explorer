@@ -32,7 +32,6 @@ export default function Identity() {
     setBusy(true);
     try {
       const next = await parseSeed(seedText);
-      if (didInput.trim() && (!isValidDid(didInput.trim()) || didInput.trim() !== next.did)) throw new Error("The pasted DID does not match the DID derived from this seed.");
       await saveIdentity(next, password);
       setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did);
       setStatus(`Signed in as ${next.did}. The seed stays in this browser; signed messages are enabled across all rooms.`);
