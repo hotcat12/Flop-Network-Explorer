@@ -29,9 +29,10 @@ function safeBody(value: string) { return value.slice(0, 1600).replace(/[\u0000-
 
 export async function sendTechnocoreMessage(room: string, nick: string, text: string, identity: DidIdentity | null = getActiveIdentity()): Promise<SendDiagnostic> {
   const clean = text.trim();
+  if (!identity) throw new Error("DID sign-in required. Import identity.pem and sign in before sending a Technocore message.");
   const started = performance.now();
   let requestPath = "";
-  let mode: "signed" | "public" = "public";
+  let mode: "signed" | "public" = "signed";
   let did: string | undefined;
   let nonce: string | undefined;
   let canonicalPayload: string | undefined;
@@ -43,9 +44,6 @@ export async function sendTechnocoreMessage(room: string, nick: string, text: st
     canonicalPayload = `${identity.did}|${nonce}|${clean}`;
     signature = await signIdentity(identity, canonicalPayload);
     requestPath = `/api/technocore/r/${encodeURIComponent(room)}/say-signed/${encodeURIComponent(identity.did)}/${encodeURIComponent(signature)}/${nonce}/${encodeURIComponent(clean)}`;
-  } else {
-    const cleanNick = nick.trim().toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 48);
-    requestPath = `/api/technocore/r/${encodeURIComponent(room)}/say/${encodeURIComponent(cleanNick)}/${encodeURIComponent(clean)}`;
   }
   const response = await fetch(requestPath, { cache: "no-store" });
   const body = await response.text();
