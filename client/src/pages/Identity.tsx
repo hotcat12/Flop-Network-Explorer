@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, KeyRound, Link2, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import ExplorerShell from "@/components/ExplorerShell";
-import { clearIdentity, didFromPublicKeyFile, generateIdentity, getActiveIdentity, getSessionDid, hasSavedIdentity, isValidDid, loadIdentity, parseImportedJwk, parseImportedPem, saveIdentity, setActiveIdentity, setSessionDid, type DidIdentity } from "@/lib/did";
+import { clearIdentity, didFromPublicKeyFile, generateIdentity, getActiveIdentity, getSessionDid, hasSavedIdentity, isValidDid, loadIdentity, parseImportedJwk, parseImportedPem, parseSeed, saveIdentity, setActiveIdentity, setSessionDid, type DidIdentity } from "@/lib/did";
 
 type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
 const ethereum = () => (window as Window & { ethereum?: EthereumProvider }).ethereum;
@@ -12,6 +12,7 @@ export default function Identity() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [pendingPem, setPendingPem] = useState("");
   const [pendingFileName, setPendingFileName] = useState("");
+  const [seedText, setSeedText] = useState("");
   const [importText, setImportText] = useState("");
   const [didInput, setDidInput] = useState("");
   const [publicKeyDid, setPublicKeyDid] = useState("");
@@ -41,12 +42,12 @@ export default function Identity() {
   }
 
   async function signInFromBackup() {
-    if (!pendingPem) { setStatus("Choose your identity.pem or backup identity file first."); return; }
+    if (!pendingPem && !seedText.trim()) { setStatus("Paste your 64-character seed or choose an identity backup file first."); return; }
     if (password.length < 8) { setStatus("Use a local password of at least 8 characters."); return; }
     if (password !== confirmPassword) { setStatus("The two local passwords do not match."); return; }
     setBusy(true);
     try {
-      const next = await parseImportedPem(pendingPem);
+      const next = seedText.trim() ? await parseSeed(seedText) : await parseImportedPem(pendingPem);
       if (didInput.trim() && (!isValidDid(didInput.trim()) || didInput.trim() !== next.did)) throw new Error("The pasted DID does not match the DID derived from this backup file.");
       await saveIdentity(next, password);
       setActiveIdentity(next);
@@ -113,10 +114,12 @@ export default function Identity() {
       <section className="hud-card overflow-hidden border-cyan-300/25 shadow-[0_0_45px_rgba(34,211,238,.08)]">
         <div className="border-b border-white/10 bg-cyan-300/5 px-6 py-5"><div className="flex items-center gap-3"><KeyRound className="h-5 w-5 text-cyan-300" /><div><h2 className="text-xl font-bold text-white">Unified identity sign-in</h2><p className="mt-1 text-xs text-zinc-500">No Shift key or keyboard shortcut is required.</p></div></div></div>
         <div className="space-y-5 p-6">
+          <label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Manual 64-character seed<textarea value={seedText} onChange={(event) => setSeedText(event.target.value)} rows={3} placeholder="Paste 64 hexadecimal characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 font-mono text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label>
+          <div className="text-center font-mono text-[10px] uppercase tracking-widest text-zinc-600">or use a backup file</div>
           <label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Backup identity file<input type="file" accept=".pem,.txt,.json,application/x-pem-file" onChange={(event) => void chooseBackup(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-cyan-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-cyan-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>
           <div className="flex items-center gap-3 border border-white/10 bg-white/[.03] p-3 text-xs text-zinc-400"><Upload className="h-4 w-4 shrink-0 text-cyan-300" /><span>{pendingFileName ? `${pendingFileName} ready to import` : "Choose identity.pem or the backup identity file you downloaded."}</span></div>
           <div className="grid gap-4 sm:grid-cols-2"><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Local password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Confirm password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Type it again" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label></div>
-          <button onClick={() => void signInFromBackup()} disabled={busy || !pendingPem} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-300 px-4 py-4 text-xs font-bold uppercase tracking-wider text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Checking identity…" : "Encrypt locally and sign in"}</button>
+          <button onClick={() => void signInFromBackup()} disabled={busy || (!pendingPem && !seedText.trim())} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-300 px-4 py-4 text-xs font-bold uppercase tracking-wider text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Checking identity…" : "Encrypt locally and sign in"}</button>
           <p className="text-center text-[11px] leading-5 text-zinc-500">Your password encrypts the identity in localStorage. The backup file and private key are not uploaded.</p>
           {hasSavedIdentity() && <button onClick={() => void unlock()} disabled={busy || password.length < 8} className="w-full border border-cyan-300/25 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200 disabled:opacity-40">Unlock saved identity</button>}
           {status && <div className="border border-white/10 bg-white/[.03] p-4 text-xs leading-5 text-zinc-300">{status}</div>}
