@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Copy, KeyRound, Link2, ShieldCheck, Trash2, Wallet } from "lucide-react";
+import { CheckCircle2, KeyRound, Link2, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import ExplorerShell from "@/components/ExplorerShell";
 import { clearIdentity, didFromPublicKeyFile, generateIdentity, getActiveIdentity, getSessionDid, hasSavedIdentity, isValidDid, loadIdentity, parseImportedJwk, parseImportedPem, saveIdentity, setActiveIdentity, setSessionDid, type DidIdentity } from "@/lib/did";
 
@@ -9,20 +9,125 @@ const ethereum = () => (window as Window & { ethereum?: EthereumProvider }).ethe
 export default function Identity() {
   const [identity, setIdentity] = useState<DidIdentity | null>(null);
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pendingPem, setPendingPem] = useState("");
+  const [pendingFileName, setPendingFileName] = useState("");
   const [importText, setImportText] = useState("");
   const [didInput, setDidInput] = useState("");
   const [publicKeyDid, setPublicKeyDid] = useState("");
   const [wallet, setWallet] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { const sessionDid = getSessionDid(); setDidInput(sessionDid); setStatus(sessionDid ? `Signed in as ${sessionDid}.` : hasSavedIdentity() ? "An encrypted Digital ID is saved in this browser." : "No Digital ID is saved in this browser."); }, []);
-  async function create() { setBusy(true); try { const next = await generateIdentity(); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); setStatus("New Ed25519 Digital ID generated and signed in locally."); } catch (error) { setStatus(error instanceof Error ? error.message : "Could not create Digital ID"); } finally { setBusy(false); } }
-  async function unlock() { setBusy(true); try { const next = await loadIdentity(password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); setStatus("Digital ID unlocked and signed in locally. The private key was not uploaded."); } catch (error) { setStatus(error instanceof Error ? error.message : "Could not unlock Digital ID"); } finally { setBusy(false); } }
-  async function importJwk() { setBusy(true); try { const next = parseImportedJwk(importText); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); setImportText(""); setStatus("Existing Ed25519 DID imported and signed in locally."); } catch (error) { setStatus(error instanceof Error ? error.message : "Import failed. Paste a private Ed25519 JWK containing x and d."); } finally { setBusy(false); } }
-  async function importPem(file: File | undefined) { if (!file) return; setBusy(true); try { const next = await parseImportedPem(await file.text()); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); if (password.length >= 8) { await saveIdentity(next, password); setStatus(`identity.pem imported, signed in, and encrypted locally. DID ${next.did} is ready for signed messages.`); } else { setStatus(`Signed in as ${next.did} for this browser tab. Add an 8+ character password to save an encrypted local copy.`); } } catch (error) { setStatus(error instanceof Error ? error.message : "PEM import failed"); } finally { setBusy(false); } }
-  async function inspectPublicKey(file: File | undefined) { if (!file) return; setBusy(true); try { const did = await didFromPublicKeyFile(await file.text()); setPublicKeyDid(did); setDidInput(did); const active = getActiveIdentity(); setStatus(active?.did === did ? "key.pub matches identity.pem. The DID is ready for signed messages." : `key.pub resolved to ${did}. Select the matching identity.pem to sign.`); } catch (error) { setStatus(error instanceof Error ? error.message : "key.pub could not be read"); } finally { setBusy(false); } }
-  async function signInWithDid() { const did = didInput.trim(); if (!isValidDid(did)) { setStatus("Invalid did:key format."); return; } const active = getActiveIdentity(); if (active?.did === did) { setSessionDid(did); setIdentity(active); setStatus(`Signed in as ${did}. Signed messages are enabled across all rooms.`); return; } setSessionDid(did); setBusy(true); try { const unlocked = await loadIdentity(password); if (unlocked.did !== did) throw new Error("The saved private key does not match this DID. Select the matching identity.pem file first."); setActiveIdentity(unlocked); setIdentity(unlocked); setStatus(`Signed in as ${did}. Signed messages are enabled across all rooms.`); } catch (error) { setStatus(error instanceof Error ? error.message : `DID session saved for ${did}; select the matching identity.pem to enable signed messages.`); } finally { setBusy(false); } }
-  async function connectWallet() { const provider = ethereum(); if (!provider) { setStatus("No injected EVM wallet found. Install MetaMask or another browser wallet."); return; } setBusy(true); try { const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[]; const address = accounts?.[0]; if (!address) throw new Error("Wallet returned no account"); const proof = await provider.request({ method: "personal_sign", params: [`FLOP/SCAN identity link\n${address}`, address] }); setWallet(address); setStatus(`Wallet connected and ownership proof signed: ${String(proof).slice(0, 12)}…`); } catch (error) { setStatus(error instanceof Error ? error.message : "Wallet connection cancelled"); } finally { setBusy(false); } }
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  useEffect(() => {
+    const sessionDid = getSessionDid();
+    setDidInput(sessionDid);
+    setStatus(sessionDid ? `Signed in as ${sessionDid}.` : hasSavedIdentity() ? "An encrypted Digital ID is saved in this browser." : "No identity in this browser yet. Bring in your backup file to sign in.");
+  }, []);
+
+  async function chooseBackup(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      setPendingPem(await file.text());
+      setPendingFileName(file.name);
+      setStatus(`${file.name} selected. Enter a local password twice, then choose Encrypt locally and sign in.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not read the backup file");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signInFromBackup() {
+    if (!pendingPem) { setStatus("Choose your identity.pem or backup identity file first."); return; }
+    if (password.length < 8) { setStatus("Use a local password of at least 8 characters."); return; }
+    if (password !== confirmPassword) { setStatus("The two local passwords do not match."); return; }
+    setBusy(true);
+    try {
+      const next = await parseImportedPem(pendingPem);
+      if (didInput.trim() && (!isValidDid(didInput.trim()) || didInput.trim() !== next.did)) throw new Error("The pasted DID does not match the DID derived from this backup file.");
+      await saveIdentity(next, password);
+      setActiveIdentity(next);
+      setSessionDid(next.did);
+      setIdentity(next);
+      setDidInput(next.did);
+      setStatus(`Signed in as ${next.did}. The encrypted identity stays in this browser; the private key was not uploaded.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Backup sign-in failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlock() {
+    setBusy(true);
+    try {
+      const next = await loadIdentity(password);
+      if (didInput.trim() && didInput.trim() !== next.did) throw new Error("The pasted DID does not match the saved identity.");
+      setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did);
+      setStatus(`Signed in as ${next.did}. Signed messages are enabled across all rooms.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "Could not unlock saved identity"); }
+    finally { setBusy(false); }
+  }
+
+  async function create() {
+    if (password.length < 8 || password !== confirmPassword) { setStatus("Enter and confirm a matching local password of at least 8 characters."); return; }
+    setBusy(true);
+    try { const next = await generateIdentity(); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); setStatus("New identity encrypted locally and signed in."); }
+    catch (error) { setStatus(error instanceof Error ? error.message : "Could not create Digital ID"); }
+    finally { setBusy(false); }
+  }
+
+  async function importJwk() {
+    if (password.length < 8 || password !== confirmPassword) { setStatus("Enter and confirm a matching local password first."); return; }
+    setBusy(true);
+    try { const next = parseImportedJwk(importText); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); setImportText(""); setStatus(`Signed in as ${next.did}. Existing identity encrypted locally.`); }
+    catch (error) { setStatus(error instanceof Error ? error.message : "JWK import failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function inspectPublicKey(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    try { const did = await didFromPublicKeyFile(await file.text()); setPublicKeyDid(did); setDidInput(did); setStatus(`key.pub resolved to ${did}. It is optional and cannot sign by itself.`); }
+    catch (error) { setStatus(error instanceof Error ? error.message : "key.pub could not be read"); }
+    finally { setBusy(false); }
+  }
+
+  async function connectWallet() {
+    const provider = ethereum();
+    if (!provider) { setStatus("No injected EVM wallet found. Install MetaMask or another browser wallet."); return; }
+    setBusy(true);
+    try { const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[]; const address = accounts?.[0]; if (!address) throw new Error("Wallet returned no account"); const proof = await provider.request({ method: "personal_sign", params: [`FLOP/SCAN identity link\n${address}`, address] }); setWallet(address); setStatus(`Wallet connected and ownership proof signed: ${String(proof).slice(0, 12)}…`); }
+    catch (error) { setStatus(error instanceof Error ? error.message : "Wallet connection cancelled"); }
+    finally { setBusy(false); }
+  }
+
   function forget() { clearIdentity(); setSessionDid(null); setActiveIdentity(null); setIdentity(null); setDidInput(""); setStatus("Local Digital ID and DID session deleted from this browser."); }
-  return <ExplorerShell eyebrow="IDENTITY VAULT"><div className="mb-8"><div className="font-mono text-[10px] uppercase tracking-[.25em] text-fuchsia-300">Private by design</div><h1 className="mt-3 text-4xl font-bold tracking-[-.05em] text-white sm:text-6xl">Digital ID & wallet</h1><p className="mt-4 max-w-3xl text-sm leading-6 text-zinc-400">Generate a browser-local Ed25519 DID for Technocore signing, import an existing private JWK or identity.pem, or connect an EVM wallet as a separate ownership link.</p></div><div className="grid gap-6 lg:grid-cols-2"><section className="hud-card p-6"><div className="flex items-center gap-3"><KeyRound className="h-5 w-5 text-cyan-300" /><h2 className="text-xl font-bold text-white">Digital ID</h2></div><label className="mt-5 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Local encryption password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label><div className="mt-4 grid gap-3 sm:grid-cols-2"><button onClick={() => void create()} disabled={busy || password.length < 8} className="bg-cyan-300 px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-40">Generate new ID</button><button onClick={() => void unlock()} disabled={busy || password.length < 8} className="border border-cyan-300/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200 disabled:opacity-40">Unlock saved ID</button></div><label className="mt-6 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Existing Ed25519 private JWK<textarea value={importText} onChange={(event) => setImportText(event.target.value)} rows={4} placeholder='Paste JSON containing kty, crv, x and d' className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label><button onClick={() => void importJwk()} disabled={busy || !importText.trim() || password.length < 8} className="mt-3 inline-flex items-center gap-2 border border-fuchsia-300/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-fuchsia-200 disabled:opacity-40">Import and encrypt locally</button><label className="mt-6 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">identity.pem private key file<input type="file" accept=".pem,application/x-pem-file" onChange={(event) => void importPem(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-cyan-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-cyan-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label><p className="mt-2 text-[11px] leading-5 text-zinc-500">Select identity.pem from your device. It is read in this browser only, then encrypted locally; it is never uploaded.</p><label className="mt-5 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">key.pub public key file<input type="file" accept=".pub,text/plain" onChange={(event) => void inspectPublicKey(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-fuchsia-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-fuchsia-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>{publicKeyDid && <p className="mt-2 break-all font-mono text-[10px] text-fuchsia-200/80">key.pub DID: {publicKeyDid}</p>}<label className="mt-6 block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Sign in with DID<input value={didInput} onChange={(event) => setDidInput(event.target.value)} placeholder="did:key:z6Mk…" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label><button onClick={signInWithDid} className="mt-3 border border-cyan-300/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200">Sign in with DID</button>{identity && <div className="mt-5 border border-cyan-300/20 bg-cyan-300/5 p-4"><div className="font-mono text-[10px] uppercase tracking-widest text-cyan-200/70">Active DID</div><div className="mt-2 break-all font-mono text-xs text-zinc-200">{identity.did}</div></div>}<button onClick={forget} className="mt-5 inline-flex items-center gap-2 text-xs text-amber-200/80"><Trash2 className="h-3.5 w-3.5" /> Delete local Digital ID</button></section><section className="space-y-6"><div className="hud-card p-6"><div className="flex items-center gap-3"><Wallet className="h-5 w-5 text-fuchsia-300" /><h2 className="text-xl font-bold text-white">MetaMask / EVM wallet</h2></div><p className="mt-3 text-sm leading-6 text-zinc-500">The EVM wallet is a separate ownership link. It does not replace an Ed25519 DID or expose its private key.</p><button onClick={() => void connectWallet()} disabled={busy} className="mt-5 inline-flex items-center gap-2 bg-fuchsia-300 px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-40"><Link2 className="h-4 w-4" />{wallet ? "Wallet connected" : "Connect wallet"}</button>{wallet && <div className="mt-4 break-all font-mono text-xs text-cyan-200">{wallet}</div>}</div><div className="flex gap-3 border border-cyan-300/20 bg-cyan-300/5 p-5"><ShieldCheck className="h-5 w-5 shrink-0 text-cyan-300" /><p className="text-xs leading-5 text-zinc-400">Private keys are encrypted with AES-GCM using a password-derived key and stored only in this browser's localStorage. They are never sent in chat requests or to Vercel.</p></div>{status && <div className="border border-white/10 bg-white/[.03] p-4 text-xs leading-5 text-zinc-300">{status}</div>}<div className="flex gap-3 border border-amber-300/20 bg-amber-300/5 p-5"><CheckCircle2 className="h-5 w-5 shrink-0 text-cyan-300" /><p className="text-xs leading-5 text-amber-100/70">PEM/JWK private material is used only in memory for import, then encrypted locally. Back up the original securely before deleting it.</p></div></section></div><div className="mt-8 flex items-center gap-2 border-t border-white/10 pt-5 font-mono text-[10px] uppercase tracking-wider text-zinc-600">Wallet address and DID are separate identities; signatures are only valid for the key that created them.</div></ExplorerShell>;
+
+  return <ExplorerShell eyebrow="IDENTITY VAULT">
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-8 text-center"><div className="font-mono text-[10px] uppercase tracking-[.25em] text-fuchsia-300">Private by design</div><h1 className="mt-3 text-4xl font-bold tracking-[-.05em] text-white sm:text-6xl">Sign in to post</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-zinc-400">Bring your existing identity backup. It is decrypted and used only in this browser tab; Technocore receives signatures, never your private key.</p></div>
+      <section className="hud-card overflow-hidden border-cyan-300/25 shadow-[0_0_45px_rgba(34,211,238,.08)]">
+        <div className="border-b border-white/10 bg-cyan-300/5 px-6 py-5"><div className="flex items-center gap-3"><KeyRound className="h-5 w-5 text-cyan-300" /><div><h2 className="text-xl font-bold text-white">Unified identity sign-in</h2><p className="mt-1 text-xs text-zinc-500">No Shift key or keyboard shortcut is required.</p></div></div></div>
+        <div className="space-y-5 p-6">
+          <label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Backup identity file<input type="file" accept=".pem,.txt,.json,application/x-pem-file" onChange={(event) => void chooseBackup(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-cyan-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-cyan-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>
+          <div className="flex items-center gap-3 border border-white/10 bg-white/[.03] p-3 text-xs text-zinc-400"><Upload className="h-4 w-4 shrink-0 text-cyan-300" /><span>{pendingFileName ? `${pendingFileName} ready to import` : "Choose identity.pem or the backup identity file you downloaded."}</span></div>
+          <div className="grid gap-4 sm:grid-cols-2"><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Local password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">Confirm password<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Type it again" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-sm text-zinc-200 outline-none focus:border-cyan-300/50" /></label></div>
+          <button onClick={() => void signInFromBackup()} disabled={busy || !pendingPem} className="inline-flex w-full items-center justify-center gap-2 bg-cyan-300 px-4 py-4 text-xs font-bold uppercase tracking-wider text-black disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Checking identity…" : "Encrypt locally and sign in"}</button>
+          <p className="text-center text-[11px] leading-5 text-zinc-500">Your password encrypts the identity in localStorage. The backup file and private key are not uploaded.</p>
+          {hasSavedIdentity() && <button onClick={() => void unlock()} disabled={busy || password.length < 8} className="w-full border border-cyan-300/25 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200 disabled:opacity-40">Unlock saved identity</button>}
+          {status && <div className="border border-white/10 bg-white/[.03] p-4 text-xs leading-5 text-zinc-300">{status}</div>}
+        </div>
+      </section>
+
+      {identity && <div className="mt-5 border border-cyan-300/20 bg-cyan-300/5 p-4"><div className="font-mono text-[10px] uppercase tracking-widest text-cyan-200/70">Signed in DID</div><div className="mt-2 break-all font-mono text-xs text-zinc-200">{identity.did}</div></div>}
+      <button onClick={() => setShowAdvanced((value) => !value)} className="mx-auto mt-6 flex items-center gap-2 text-xs text-zinc-500 hover:text-cyan-200">{showAdvanced ? <X className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />} Advanced identity options</button>
+      {showAdvanced && <section className="mt-4 space-y-5 border border-white/10 bg-black/20 p-5"><div className="grid gap-3 sm:grid-cols-2"><button onClick={() => void create()} disabled={busy} className="border border-cyan-300/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-cyan-200">Generate new identity</button><button onClick={forget} className="inline-flex items-center justify-center gap-2 border border-amber-300/25 px-4 py-3 text-xs text-amber-200"><Trash2 className="h-3.5 w-3.5" /> Delete local identity</button></div><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Optional DID verification<input value={didInput} onChange={(event) => setDidInput(event.target.value)} placeholder="did:key:z6Mk…" className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label><label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Optional key.pub<input type="file" accept=".pub,text/plain" onChange={(event) => void inspectPublicKey(event.target.files?.[0])} disabled={busy} className="mt-2 block w-full cursor-pointer border border-fuchsia-300/25 bg-black/30 px-3 py-3 text-xs text-zinc-300 file:mr-4 file:border-0 file:bg-fuchsia-300 file:px-3 file:py-2 file:text-xs file:font-bold file:text-black" /></label>{publicKeyDid && <p className="break-all font-mono text-[10px] text-fuchsia-200/80">key.pub DID: {publicKeyDid}</p>}<label className="block font-mono text-[10px] uppercase tracking-widest text-zinc-600">Advanced private JWK<textarea value={importText} onChange={(event) => setImportText(event.target.value)} rows={3} placeholder='JSON containing kty, crv, x and d' className="mt-2 w-full border border-white/15 bg-black/30 px-3 py-3 text-xs text-zinc-200 outline-none focus:border-cyan-300/50" /></label><button onClick={() => void importJwk()} disabled={busy || !importText.trim()} className="border border-fuchsia-300/30 px-4 py-3 text-xs font-bold uppercase tracking-wider text-fuchsia-200 disabled:opacity-40">Import JWK and sign in</button></section>}
+
+      <section className="mt-6 space-y-5"><div className="hud-card p-6"><div className="flex items-center gap-3"><Wallet className="h-5 w-5 text-fuchsia-300" /><h2 className="text-xl font-bold text-white">Optional EVM wallet link</h2></div><p className="mt-3 text-sm leading-6 text-zinc-500">This is separate from Technocore DID signing and does not replace your identity.pem.</p><button onClick={() => void connectWallet()} disabled={busy} className="mt-5 inline-flex items-center gap-2 bg-fuchsia-300 px-4 py-3 text-xs font-bold uppercase tracking-wider text-black disabled:opacity-40"><Link2 className="h-4 w-4" />{wallet ? "Wallet connected" : "Connect wallet"}</button>{wallet && <div className="mt-4 break-all font-mono text-xs text-cyan-200">{wallet}</div>}</div><div className="flex gap-3 border border-cyan-300/20 bg-cyan-300/5 p-5"><ShieldCheck className="h-5 w-5 shrink-0 text-cyan-300" /><p className="text-xs leading-5 text-zinc-400">Private keys remain local. Never paste your seed phrase into chat or send it to anyone.</p></div><div className="flex gap-3 border border-amber-300/20 bg-amber-300/5 p-5"><CheckCircle2 className="h-5 w-5 shrink-0 text-cyan-300" /><p className="text-xs leading-5 text-amber-100/70">After sign-in, open any room. Posting uses the DID signature; reading remains public.</p></div></section>
+    </div>
+  </ExplorerShell>;
 }
