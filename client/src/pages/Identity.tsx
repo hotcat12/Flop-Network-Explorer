@@ -20,9 +20,15 @@ export default function Identity() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
-    const sessionDid = getSessionDid();
-    setDidInput(sessionDid);
-    setStatus(sessionDid ? `Signed in as ${sessionDid}.` : hasSavedIdentity() ? "An encrypted Digital ID is saved in this browser." : "No identity in this browser yet. Bring in your backup file to sign in.");
+    const refreshSession = () => {
+      const sessionDid = getSessionDid();
+      setDidInput(sessionDid);
+      if (sessionDid) setStatus(`Signed in as ${sessionDid}.`);
+      else { setIdentity(null); setStatus(hasSavedIdentity() ? "Logged out. The encrypted Digital ID remains in this browser; enter its password to unlock it." : "No identity in this browser yet. Paste your seed to sign in."); }
+    };
+    refreshSession();
+    window.addEventListener("flop:identity", refreshSession);
+    return () => window.removeEventListener("flop:identity", refreshSession);
   }, []);
 
   async function signInFromSeed() {
