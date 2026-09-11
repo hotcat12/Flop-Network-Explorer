@@ -3,5 +3,11 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/public",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/trpc/:path*",
+      "destination": "https://flopexplore-hjrkkjcb.manus.space/api/trpc/:path*"
+    }
+  ]
 }
