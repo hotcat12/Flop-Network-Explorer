@@ -42,7 +42,7 @@ export default function Identity() {
     try {
       const next = await parseSeed(seedText);
       await saveIdentity(next, password);
-      setActiveIdentity(next); setSessionDid(next.did); window.dispatchEvent(new Event("flop:identity")); setIdentity(next); setDidInput(next.did);
+      setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); window.dispatchEvent(new Event("flop:identity"));
       setStatus(`Signed in as ${next.did}. The seed stays in this browser; signed messages are enabled across all rooms.`);
     } catch (error) { setStatus(error instanceof Error ? error.message : "Seed sign-in failed"); }
     finally { setBusy(false); }
@@ -53,7 +53,7 @@ export default function Identity() {
     try {
       const next = await loadIdentity(password);
       if (didInput.trim() && didInput.trim() !== next.did) throw new Error("The pasted DID does not match the saved identity.");
-      setActiveIdentity(next); setSessionDid(next.did); window.dispatchEvent(new Event("flop:identity")); setIdentity(next); setDidInput(next.did);
+      setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); window.dispatchEvent(new Event("flop:identity"));
       setStatus(`Signed in as ${next.did}. Signed messages are enabled across all rooms.`);
     } catch (error) { setStatus(error instanceof Error ? error.message : "Could not unlock saved identity"); }
     finally { setBusy(false); }
@@ -62,7 +62,7 @@ export default function Identity() {
   async function create() {
     if (password.length < 8 || password !== confirmPassword) { setStatus("Enter and confirm a matching local password of at least 8 characters."); return; }
     setBusy(true);
-    try { const next = await generateIdentity(); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); window.dispatchEvent(new Event("flop:identity")); setIdentity(next); setDidInput(next.did); setStatus("New identity encrypted locally and signed in."); }
+    try { const next = await generateIdentity(); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); window.dispatchEvent(new Event("flop:identity")); setStatus("New identity encrypted locally and signed in."); }
     catch (error) { setStatus(error instanceof Error ? error.message : "Could not create Digital ID"); }
     finally { setBusy(false); }
   }
@@ -70,7 +70,7 @@ export default function Identity() {
   async function importJwk() {
     if (password.length < 8 || password !== confirmPassword) { setStatus("Enter and confirm a matching local password first."); return; }
     setBusy(true);
-    try { const next = parseImportedJwk(importText); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); window.dispatchEvent(new Event("flop:identity")); setIdentity(next); setDidInput(next.did); setImportText(""); setStatus(`Signed in as ${next.did}. Existing identity encrypted locally.`); }
+    try { const next = parseImportedJwk(importText); await saveIdentity(next, password); setActiveIdentity(next); setSessionDid(next.did); setIdentity(next); setDidInput(next.did); window.dispatchEvent(new Event("flop:identity")); setImportText(""); setStatus(`Signed in as ${next.did}. Existing identity encrypted locally.`); }
     catch (error) { setStatus(error instanceof Error ? error.message : "JWK import failed"); }
     finally { setBusy(false); }
   }
