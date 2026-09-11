@@ -70,6 +70,7 @@ export type MessageRecord = {
 
 const TECHNОCORE_ROOMS = "https://technocore.chat/rooms?format=json&limit=200";
 const TECHNОCORE_BASE = "https://technocore.chat";
+const CLUB_COMMUNITY_ROOM = "club-community";
 
 export function normalizeRoom(input: any): RoomRecord {
   return {
@@ -157,6 +158,13 @@ export async function persistRooms(rows: RoomRecord[]) {
 export async function getRooms(query?: string) {
   const live = await fetchLiveRooms().catch(() => null);
   const rows = live && live.length ? live : await getCachedRooms();
+  if (!rows.some((row) => row.room === CLUB_COMMUNITY_ROOM)) {
+    const club = await getRoomMessages(CLUB_COMMUNITY_ROOM);
+    if (club.source === "live") {
+      const last = club.messages.at(-1);
+      rows.push({ room: CLUB_COMMUNITY_ROOM, topic: "Club Community · project room", messages: club.messages.length, size: 0, idle: 0, lastSeq: Number(last?.seq ?? 0), lastSeen: String(last?.ts ?? new Date().toISOString()), source: "live", stale: false });
+    }
+  }
   const q = query?.trim().toLowerCase();
   return q ? rows.filter((row) => `${row.room} ${row.topic}`.toLowerCase().includes(q)) : rows;
 }
