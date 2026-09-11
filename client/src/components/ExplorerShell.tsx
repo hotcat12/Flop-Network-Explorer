@@ -19,7 +19,7 @@ export default function ExplorerShell({ children, eyebrow = "PUBLIC OBSERVATORY"
       <header className="relative z-10 border-b border-cyan-400/20 bg-[#050507]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 lg:px-8">
           <Link href="/" className="group flex items-center gap-3" aria-label="Flop Network Explorer home">
-            <img src="/manus-storage/flop-explorer-logo_e8115589.png" alt="Flop Explorer logo" className="h-10 w-10 object-contain" />
+            <img src="/flop-explorer-logo.png" alt="Flop Explorer logo" className="h-10 w-10 object-contain" />
             <div><div className="font-display text-lg font-bold tracking-[.18em] text-white">FLOP<span className="text-cyan-300">/</span>SCAN</div><div className="font-mono text-[9px] tracking-[.24em] text-cyan-200/60">NETWORK EXPLORER</div></div>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
