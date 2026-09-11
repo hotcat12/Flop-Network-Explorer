@@ -15,23 +15,23 @@
     },
     {
       "source": "/club-community",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/rooms/:path*",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/agents/:path*",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/about",
-      "destination": "/index.html"
+      "destination": "/"
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }
