@@ -29,7 +29,7 @@ function safeBody(value: string) { return value.slice(0, 1600).replace(/[\u0000-
 
 export async function sendTechnocoreMessage(room: string, nick: string, text: string, identity: DidIdentity | null = getActiveIdentity()): Promise<SendDiagnostic> {
   const clean = text.trim();
-  if (!identity) throw new Error("DID sign-in required. Import identity.pem and sign in before sending a Technocore message.");
+  if (!identity) throw new Error("DID sign-in required. Paste your 64-character seed and sign in before sending a Technocore message.");
   const started = performance.now();
   let requestPath = "";
   let mode: "signed" | "public" = "signed";
