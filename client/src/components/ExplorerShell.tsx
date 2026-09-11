@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Activity, BookOpen, Boxes, Menu, Radio, ShieldCheck, X } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { getSessionDid } from "@/lib/did";
 
 export const MOBILE_NAV_ROUTES = [
   { href: "/", label: "Overview", icon: Activity },
@@ -33,6 +34,7 @@ export default function ExplorerShell({ children, eyebrow = "PUBLIC OBSERVATORY"
             <NavLink href="/about" icon={<BookOpen className="h-4 w-4" />}>Protocol notes</NavLink>
           </nav>
           <div className="flex items-center gap-2">
+            <Link href="/identity" className="hidden max-w-[190px] truncate border border-fuchsia-300/25 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-fuchsia-200/80 sm:block">{getSessionDid() ? `DID ${getSessionDid().slice(0, 18)}…` : "Sign in"}</Link>
             <div className="hidden items-center gap-2 border border-cyan-300/20 px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-cyan-200/70 sm:flex"><span className="h-1.5 w-1.5 animate-pulse bg-cyan-300 shadow-[0_0_8px_#67e8f9]" />{eyebrow}</div>
             <button type="button" aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)} className="inline-flex items-center justify-center border border-cyan-300/25 p-2 text-cyan-200 transition hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 md:hidden">
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
