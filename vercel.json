@@ -14,6 +14,22 @@
       "destination": "https://technocore.chat/:path*"
     },
     {
+      "source": "/club-community",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/rooms/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/agents/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
