@@ -8,6 +8,10 @@
     {
       "source": "/api/trpc/:path*",
       "destination": "https://flopexplore-hjrkkjcb.manus.space/api/trpc/:path*"
+    },
+    {
+      "source": "/api/technocore/:path*",
+      "destination": "https://technocore.chat/:path*"
     }
   ]
 }
